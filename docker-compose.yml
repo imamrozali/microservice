@@ -1,0 +1,62 @@
+services:
+  # PostgreSQL for main database
+  postgres-main:
+    image: postgres:15-alpine
+    container_name: postgres-main
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: employee_management
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_main_data:/var/lib/postgresql/data
+      - ./packages/database/setup/init:/docker-entrypoint-initdb.d
+    networks:
+      - microservice-network
+
+  # PostgreSQL for logs database
+  postgres-logs:
+    image: postgres:15-alpine
+    container_name: postgres-logs
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: employee_logs
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_logs_data:/var/lib/postgresql/data
+    networks:
+      - microservice-network
+
+  # RabbitMQ for message queuing
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: password
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microservice-network
+
+volumes:
+  postgres_main_data:
+    driver: local
+  postgres_logs_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+networks:
+  microservice-network:
+    driver: bridge

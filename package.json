@@ -1,0 +1,38 @@
+{
+  "name": "microservices",
+  "private": true,
+  "version": "1.0.0",
+  "description": "microservices rest-api",
+  "author": {
+    "name": "Muhammad Imam Rozali",
+    "email": "muh.imamrozali@gmail.com"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "clean": "turbo clean",
+    "start": "turbo start",
+    "db:migrate": "turbo db:migrate",
+    "db:seed": "turbo db:seed",
+    "db:create": "turbo db:create"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1",
+    "typescript": "^5.2.2"
+  },
+  "packageManager": "npm@10.2.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@turbo/gen": "^2.6.1",
+    "turbo": "^2.6.1"
+  }
+}
