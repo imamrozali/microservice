@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { attendanceService, type AttendanceEvent } from '../services'
+import dayjs from '../utils/dayjs'
 
 interface AttendanceTrackerProps {
     onAttendanceUpdate?: () => void
@@ -24,7 +25,7 @@ export function AttendanceTracker({ onAttendanceUpdate }: AttendanceTrackerProps
 
     const loadTodayAttendance = async () => {
         try {
-            const today = new Date().toISOString().split('T')[0]
+            const today = dayjs().format('YYYY-MM-DD')
             const events = await attendanceService.getAttendanceEvents(today, today)
 
             const checkIn = events.find(event => event.eventType === 'check-in')
@@ -124,23 +125,11 @@ export function AttendanceTracker({ onAttendanceUpdate }: AttendanceTrackerProps
     }
 
     const formatDateTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleString('id-ID', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        })
+        return dayjs(timestamp).format('DD/MM/YYYY HH:mm:ss')
     }
 
     const formatTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        })
+        return dayjs(timestamp).format('HH:mm')
     }
 
     const getTodayStatus = () => {

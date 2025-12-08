@@ -1,41 +1,34 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "ui": "tui",
+  "globalEnv": [
+    "DB_MAIN_HOST",
+    "DB_MAIN_PORT",
+    "DB_MAIN_NAME",
+    "DB_MAIN_USER",
+    "DB_MAIN_PASSWORD",
+    "DB_MAIN_SSL"
+  ],
+  "ui":"tui",
   "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "build/**", ".next/**", "!.next/cache/**"]
-    },
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "start": {
-      "dependsOn": ["build"],
+    "build": {
       "cache": false,
-      "persistent": true
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
-    "test": {
-      "dependsOn": ["build"],
-      "outputs": ["coverage/**"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "clean": {
+    "lint": {},
+    "migrate": {
+      "dependsOn": ["^migrate"],
       "cache": false
     },
-    "db:create": {
+    "seed": {
       "cache": false
     },
-    "db:migrate": {
-      "cache": false,
-      "dependsOn": ["db:create"]
-    },
-    "db:seed": {
-      "cache": false,
-      "dependsOn": ["db:migrate", "db:create"]
-    }
+    "test": {},
+    "test:e2e": {}
   }
 }

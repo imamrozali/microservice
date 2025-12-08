@@ -1,0 +1,1 @@
+{"root":["./src/factory.ts","./src/index.ts","./src/manager.ts","./src/types.ts","./src/drivers/mongodb.ts","./src/drivers/mssql.ts","./src/drivers/mysql.ts","./src/drivers/oracle.ts","./src/drivers/postgresql.ts","./src/drivers/sqlite.ts"],"version":"5.9.3"}

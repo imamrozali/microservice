@@ -1,0 +1,9 @@
+{
+  "extends": "@repo/typescript-config/vite.json",
+  "include": ["../employee-monitor-client/src"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler"
+  }
+}

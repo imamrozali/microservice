@@ -1,19 +1,19 @@
 {
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["ES2022"],
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "CommonJS",
     "moduleResolution": "node",
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./",
-    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "resolveJsonModule": true
+    "strict": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true
   },
-  "include": ["src/**/*", "setup/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

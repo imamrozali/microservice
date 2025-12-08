@@ -1,38 +1,56 @@
 {
-  "name": "microservices",
+  "name": "microservice",
+  "version": "0.0.0",
   "private": true,
-  "version": "1.0.0",
-  "description": "microservices rest-api",
-  "author": {
-    "name": "Muhammad Imam Rozali",
-    "email": "muh.imamrozali@gmail.com"
-  },
+  "description": "",
+  "author": "",
+  "license": "UNLICENSED",
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
-    "test": "turbo test",
-    "clean": "turbo clean",
-    "start": "turbo start",
-    "db:migrate": "turbo db:migrate",
-    "db:seed": "turbo db:seed",
-    "db:create": "turbo db:create"
+    "dev": "turbo run dev --concurrency=15",
+    "test": "turbo run test",
+    "test:attendance-service": "turbo run test --filter=attendance-service",
+    "test:employee-service": "turbo run test --filter=employee-service",
+    "test:auth-service": "turbo run test --filter=auth-service",
+    "test:attendance-client": "turbo run test --filter=attendance-client",
+    "test:employee-monitor-client": "turbo run test --filter=employee-monitor-client",
+    "test:notification-service": "turbo run test --filter=notification-service",
+    "test:user-service": "turbo run test --filter=user-service",
+    "build": "turbo run build",
+    "build:attendance-service": "turbo run build --filter=attendance-service",
+    "build:employee-service": "turbo run build --filter=employee-service",
+    "build:auth-service": "turbo run build --filter=auth-service",
+    "build:attendance-client": "turbo run build --filter=attendance-client",
+    "build:employee-monitor-client": "turbo run build --filter=employee-monitor-client",
+    "build:notification-service": "turbo run build --filter=notification-service",
+    "build:user-service": "turbo run build --filter=user-service",
+    "lint": "turbo run lint",
+    "lint:attendance-service": "turbo run lint --filter=attendance-service",
+    "lint:employee-service": "turbo run lint --filter=employee-service",
+    "lint:auth-service": "turbo run lint --filter=auth-service",
+    "lint:attendance-client": "turbo run lint --filter=attendance-client",
+    "lint:employee-monitor-client": "turbo run lint --filter=employee-monitor-client",
+    "lint:notification-service": "turbo run lint --filter=notification-service",
+    "lint:user-service": "turbo run lint --filter=user-service",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "migrate": "turbo run migrate --concurrency=1",
+    "seed": "turbo run seed",
+    "prepare": "husky install"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.1",
-    "typescript": "^5.2.2"
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "prettier": "^3.2.5",
+    "turbo": "^2.6.3"
   },
-  "packageManager": "npm@10.2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "npm@10.8.2",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
   "dependencies": {
-    "@turbo/gen": "^2.6.1",
-    "turbo": "^2.6.1"
+    "husky": "^9.1.7"
   }
 }

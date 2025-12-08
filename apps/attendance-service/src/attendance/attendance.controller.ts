@@ -2,118 +2,105 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
+  Param,
   Query,
-  UseGuards,
-  Request,
-} from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
-import { AttendanceService } from "./attendance.service";
-import { AuditService } from "../audit/audit.service";
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { AttendanceService } from './attendance.service';
+import type { CreateAttendanceEventDto } from '../dto';
 
-@ApiTags("attendance")
-@Controller("attendance")
-@UseGuards(AuthGuard("jwt"))
-@ApiBearerAuth()
+@Controller('attendance')
 export class AttendanceController {
-  constructor(
-    private attendanceService: AttendanceService,
-    private auditService: AuditService
-  ) {}
+  constructor(private readonly attendanceService: AttendanceService) {}
 
-  @Post("check-in")
-  @ApiOperation({ summary: "Check in attendance" })
-  checkIn(
-    @Request() req,
-    @Body()
-    body: {
-      latitude?: number;
-      longitude?: number;
-    }
-  ) {
-    return this.attendanceService.checkIn(req.user.userId, {
-      ...body,
-      agent: req.headers["user-agent"],
-    });
+  @Get()
+  async findAll() {
+    return await this.attendanceService.findAll();
   }
 
-  @Post("check-out")
-  @ApiOperation({ summary: "Check out attendance" })
-  checkOut(
-    @Request() req,
-    @Body()
-    body: {
-      latitude?: number;
-      longitude?: number;
-    }
+  @Get('events')
+  async getEvents(
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
-    return this.attendanceService.checkOut(req.user.userId, {
-      ...body,
-      agent: req.headers["user-agent"],
-    });
+    return await this.attendanceService.getAttendanceByDateRange(
+      userId,
+      startDate,
+      endDate,
+    );
   }
 
-  @Get("summary")
-  @ApiOperation({ summary: "Get attendance summary" })
+  @Get('today/:userId')
+  async getTodayAttendance(@Param('userId') userId: string) {
+    return await this.attendanceService.getTodayAttendance(userId);
+  }
+
+  @Get('summary')
   async getSummary(
-    @Request() req,
-    @Query("startDate") startDate: string,
-    @Query("endDate") endDate: string
+    @Query('userId') userId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('status') status?: string,
   ) {
-    const start = startDate
-      ? new Date(startDate)
-      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const end = endDate ? new Date(endDate) : new Date();
-
-    // Log attendance summary access
-    await this.auditService.createUserAuditLog(
-      req.user.userId,
-      "attendance-service",
-      "UPDATE",
-      {
-        action: "attendance_summary_accessed",
-        start_date: start.toISOString(),
-        end_date: end.toISOString(),
-        accessed_at: new Date().toISOString(),
-      }
-    );
-
-    return this.attendanceService.getAttendanceSummary(
-      req.user.userId,
-      start,
-      end
+    return await this.attendanceService.getAttendanceByDateRange(
+      userId,
+      startDate,
+      endDate,
     );
   }
 
-  @Get("events")
-  @ApiOperation({ summary: "Get attendance events" })
-  getEvents(@Request() req, @Query("date") date?: string) {
-    const eventDate = date ? new Date(date) : undefined;
-    return this.attendanceService.getAttendanceEvents(
-      req.user.userId,
-      eventDate
+  @Get(':id')
+  async findById(@Param('id') id: string) {
+    return await this.attendanceService.findById(id);
+  }
+
+  @Get('employee/:employeeId')
+  async findByEmployeeId(@Param('employeeId') employeeId: string) {
+    return await this.attendanceService.findByEmployeeId(employeeId);
+  }
+
+  @Get('employee/:employeeId/range')
+  async getEventsByDateRange(
+    @Param('employeeId') employeeId: string,
+    @Query('start_date') startDate: string,
+    @Query('end_date') endDate: string
+  ) {
+    return await this.attendanceService.getEventsByDateRange(
+      employeeId,
+      new Date(startDate),
+      new Date(endDate)
     );
   }
 
-  @Get("employees-absent")
-  @ApiOperation({ summary: "Get employees without check-in today" })
-  async getAbsentEmployees(@Request() req, @Query("date") date?: string) {
-    const checkDate = date ? new Date(date) : new Date();
+  @Post('check-in')
+  @HttpCode(HttpStatus.CREATED)
+  async checkIn(@Body() data: { userId: string; latitude?: number; longitude?: number }) {
+    try {
+      return await this.attendanceService.checkIn(data.userId, data.latitude, data.longitude);
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to check in');
+    }
+  }
 
-    // Log access to absent employees report
-    await this.auditService.createUserAuditLog(
-      req.user.userId,
-      "attendance-service",
-      "UPDATE",
-      {
-        action: "absent_employees_report_accessed",
-        check_date: checkDate.toISOString(),
-        accessed_by: req.user.email,
-        accessed_at: new Date().toISOString(),
-      }
-    );
+  @Post('check-out')
+  @HttpCode(HttpStatus.CREATED)
+  async checkOut(@Body() data: { userId: string; latitude?: number; longitude?: number }) {
+    return await this.attendanceService.checkOut(data.userId, data.latitude, data.longitude);
+  }
 
-    return this.attendanceService.getEmployeesWithoutCheckIn(checkDate);
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() data: CreateAttendanceEventDto) {
+    return await this.attendanceService.create(data);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async delete(@Param('id') id: string) {
+    await this.attendanceService.delete(id);
   }
 }

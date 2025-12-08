@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { userService, type User, type UpdatePasswordRequest, type UpdateProfileRequest } from '../services'
-import { Navigation } from '../components/Navigation'
 import { ProfileCard } from '../components/ProfileCard'
 import { AttendanceTracker } from '../components/AttendanceTracker'
 import { AttendanceHistory } from '../components/AttendanceHistory'
 
 export function HomePage() {
-    const [activeTab, setActiveTab] = useState<'profile' | 'attendance' | 'history'>('profile')
+    const [activeTab] = useState<'profile' | 'attendance' | 'history'>('profile')
     const [user, setUser] = useState<User | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isUpdating, setIsUpdating] = useState(false)
@@ -35,8 +34,7 @@ export function HomePage() {
         try {
             setIsUpdating(true)
             const updateData: UpdateProfileRequest = {
-                phoneNumber: data.phoneNumber,
-                profilePicture: data.profilePicture
+                phone_number: data.phoneNumber
             }
 
             const updatedUser = await userService.updateProfile(updateData)
@@ -102,12 +100,6 @@ export function HomePage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <Navigation
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                userName={user.employee?.fullName}
-            />
-
             <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 {activeTab === 'profile' && (
                     <div className="space-y-6">

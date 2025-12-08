@@ -1,51 +1,50 @@
-import { NestFactory } from "@nestjs/core";
-import { ValidationPipe } from "@nestjs/common";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { AppModule } from "./app.module";
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+// Set timezone to Asia/Jakarta (WIB)
+process.env.TZ = process.env.TZ || 'Asia/Jakarta';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS
   app.enableCors({
-    origin: "*", // or '*' for all origins
+    origin: process.env.CORS_ORIGIN || '*',
     credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    allowedHeaders: "Content-Type,Authorization",
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    })
-  );
+  // Set global prefix
+  app.setGlobalPrefix('api');
 
-  // Global prefix
-  app.setGlobalPrefix("api");
-
-  // Swagger documentation
+  // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle("Auth Service API")
-    .setDescription(
-      "Authentication and authorization service for employee management system"
+    .setTitle('Auth Service API')
+    .setDescription('Authentication and Authorization Service - JWT Token Management')
+    .setVersion('1.0.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Enter JWT access_token',
+      },
+      'JWT-auth',
     )
-    .setVersion("1.0")
-    .addBearerAuth()
-    .addTag("auth", "Authentication endpoints")
-    .addTag("users", "User management endpoints")
+    .addTag('auth', 'Authentication endpoints')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("api/docs", app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.AUTH_SERVICE_PORT || 3001;
+  const port = process.env.PORT || 3001;
   await app.listen(port);
 
   console.log(`🚀 Auth Service is running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
+  console.log(`📚 API endpoints: http://localhost:${port}/api`);
+  console.log(`📖 Swagger docs: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

@@ -1,18 +1,12 @@
-import { Module } from "@nestjs/common";
-import { AttendanceService } from "./attendance.service";
-import { AttendanceController } from "./attendance.controller";
-import { AuditService } from "../audit/audit.service";
-import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
-import { AttendanceAuditWebSocketGateway } from "../websocket/attendance-audit-websocket.gateway";
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { AttendanceController } from './attendance.controller';
+import { AttendanceService } from './attendance.service';
 
 @Module({
-  providers: [
-    AttendanceService,
-    AuditService,
-    RabbitMQService,
-    AttendanceAuditWebSocketGateway,
-  ],
+  imports: [HttpModule],
   controllers: [AttendanceController],
+  providers: [AttendanceService],
   exports: [AttendanceService],
 })
 export class AttendanceModule {}

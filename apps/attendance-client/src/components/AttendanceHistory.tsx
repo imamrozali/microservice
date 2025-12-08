@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { attendanceService, type AttendanceSummary } from '../services'
+import dayjs from '../utils/dayjs'
 
 interface DateRange {
     startDate: string
@@ -20,16 +21,14 @@ export function AttendanceHistory() {
 
     // Set default date range (start of month to today)
     useEffect(() => {
-        const today = new Date()
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+        const startDate = dayjs().startOf('month').format('YYYY-MM-DD')
+        const endDate = dayjs().format('YYYY-MM-DD')
 
-        const formatDate = (date: Date) => date.toISOString().split('T')[0]
-
-        setValue('startDate', formatDate(startOfMonth))
-        setValue('endDate', formatDate(today))
+        setValue('startDate', startDate)
+        setValue('endDate', endDate)
 
         // Load initial data
-        loadAttendanceData(formatDate(startOfMonth), formatDate(today))
+        loadAttendanceData(startDate, endDate)
     }, [setValue])
 
     const loadAttendanceData = async (startDate?: string, endDate?: string) => {
@@ -51,19 +50,11 @@ export function AttendanceHistory() {
     }
 
     const formatTime = (timestamp: string) => {
-        return new Date(timestamp).toLocaleTimeString('id-ID', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        })
+        return dayjs(timestamp).format('HH:mm')
     }
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        })
+        return dayjs(dateString).format('DD/MM/YYYY')
     }
 
     const getStatusBadge = (status: string) => {

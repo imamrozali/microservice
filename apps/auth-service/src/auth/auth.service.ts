@@ -1,117 +1,218 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import { UsersService } from "../users/users.service";
-import { AuditService } from "../audit/audit.service";
-import * as bcrypt from "bcrypt";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { HttpService } from '@nestjs/axios';
+import { db } from '../database/connection';
+import * as bcrypt from 'bcryptjs';
+import { firstValueFrom } from 'rxjs';
+import type { LoginDto, TokenResponseDto } from './auth.dto';
+import { WebSocketGatewayService } from '../websocket/websocket.gateway';
+import { RabbitMQService } from '../rabbitmq/rabbitmq.service';
 
-export interface JwtPayload {
-  sub: string;
+interface User {
+  id: string;
   email: string;
-  roleCode: string;
-}
-
-export interface AuthResponse {
-  access_token: string;
-  user: {
-    id: string;
-    email: string;
-    role: string;
-    profile?: {
-      fullName: string;
-      position: string;
-    };
-  };
+  password: string;
+  full_name: string;
+  role_id: string;
+  is_active: boolean;
 }
 
 @Injectable()
 export class AuthService {
+  private readonly userServiceUrl = `${process.env.USER_SERVICE_URL}/api`;
+
   constructor(
-    private usersService: UsersService,
     private jwtService: JwtService,
-    private auditService: AuditService
+    private httpService: HttpService,
+    private websocketGateway: WebSocketGatewayService,
+    private rabbitMQService: RabbitMQService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.usersService.findByEmail(email);
+  async login(loginDto: LoginDto): Promise<TokenResponseDto> {
+    try {
+      // Fetch user from User Service
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.userServiceUrl}/users/verify`, {
+          email: loginDto.email,
+          password: loginDto.password,
+        }),
+      );
 
-    if (user && (await bcrypt.compare(password, user.password_hash))) {
-      const { password_hash, ...result } = user;
-      return result;
-    }
-    return null;
-  }
+      const user = response.data;
 
-  async login(user: any): Promise<AuthResponse> {
-    const payload: JwtPayload = {
-      email: user.email,
-      sub: user.id,
-      roleCode: user.role_code,
-    };
-
-    // Log successful login
-    await this.auditService.createUserAuditLog(
-      user.id,
-      "auth-service",
-      "UPDATE",
-      {
-        action: "user_login",
-        email: user.email,
-        role: user.role_code,
-        timestamp: new Date().toISOString(),
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
       }
-    );
 
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        id: user.id,
+      const tokens = await this.generateTokens(user);
+
+      // Create notification in notification service
+      try {
+        await firstValueFrom(
+          this.httpService.post(`${process.env.NOTIFICATION_SERVICE_URL}/api/notifications`, {
+            user_id: user.id,
+            notification_type: 'login',
+            title: 'User Login',
+            message: `${user.email} logged in`,
+            metadata: { email: user.email, full_name: user.full_name, timestamp: new Date().toISOString() },
+          }),
+        );
+      } catch (error: any) {
+        console.error('Failed to create login notification:', error?.message || 'Unknown error');
+      }
+
+      // Emit login notification to admin via WebSocket (legacy)
+      this.websocketGateway.emitLoginNotification({
+        event: 'user-login',
+        userId: user.id,
         email: user.email,
-        role: user.role_code,
-        profile: user.full_name
-          ? {
-              fullName: user.full_name,
-              position: user.position,
-            }
-          : undefined,
-      },
-    };
+        full_name: user.full_name,
+        timestamp: new Date().toISOString(),
+        message: `User ${user.full_name} logged in successfully`,
+      });
+
+      // Publish audit log to RabbitMQ
+      try {
+        await this.rabbitMQService.publishAuditLog({
+          user_id: user.id,
+          entity_type: 'auth',
+          action_type: 'login',
+          old_data: null,
+          new_data: {
+            email: user.email,
+            full_name: user.full_name,
+            login_time: new Date().toISOString(),
+          },
+          ip_address: null,
+          user_agent: null,
+        });
+      } catch (error: any) {
+        console.error('Failed to publish audit log:', error?.message || 'Unknown error');
+      }
+
+      return {
+        ...tokens,
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          role_id: user.role_id,
+          role_name: user.role_name,
+          photo_url: user.photo_url || null,
+        },
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
 
-  async register(
-    email: string,
-    password: string,
-    roleCode: string = "EMPLOYEE"
-  ) {
-    // Check if user already exists
-    const existingUser = await this.usersService.findByEmail(email);
-    if (existingUser) {
-      throw new UnauthorizedException("User with this email already exists");
+  async logout(userId: string, refreshToken: string): Promise<void> {
+    // Get all tokens for user
+    const tokens = await db('refresh_tokens').where({ user_id: userId });
+    
+    // Find matching token using bcrypt.compare
+    for (const token of tokens) {
+      const isMatch = await bcrypt.compare(refreshToken, token.token_hash);
+      if (isMatch) {
+        await db('refresh_tokens').where({ id: token.id }).delete();
+        return;
+      }
     }
+  }
 
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+  async refreshToken(refreshToken: string): Promise<TokenResponseDto> {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
 
-    // Create user
-    const user = await this.usersService.create({
-      email,
-      password_hash: hashedPassword,
-      role_code: roleCode,
+      // Get all tokens for user
+      const tokens = await db('refresh_tokens').where({ user_id: payload.sub });
+      
+      let storedToken = null;
+      // Find matching token using bcrypt.compare
+      for (const token of tokens) {
+        const isMatch = await bcrypt.compare(refreshToken, token.token_hash);
+        if (isMatch) {
+          storedToken = token;
+          break;
+        }
+      }
+
+      if (!storedToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      if (new Date(storedToken.expires_at) < new Date()) {
+        await db('refresh_tokens').where({ id: storedToken.id }).delete();
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      // Fetch user from User Service
+      const response = await firstValueFrom(
+        this.httpService.get(`${this.userServiceUrl}/users/${payload.sub}`),
+      );
+      const user = response.data;
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      // Delete old refresh token
+      await db('refresh_tokens').where({ id: storedToken.id }).delete();
+
+      return await this.generateTokens(user as User);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async verifyToken(token: string): Promise<any> {
+    try {
+      return this.jwtService.verify(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+
+  private async generateTokens(user: User): Promise<TokenResponseDto> {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role_id: user.role_id,
+    };
+
+    const accessToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn: '15m',
     });
 
-    // Log user registration
-    await this.auditService.createUserAuditLog(
-      user.id,
-      "auth-service",
-      "INSERT",
-      {
-        action: "user_registration",
-        email: user.email,
-        role: user.role_code,
-        timestamp: new Date().toISOString(),
-      }
-    );
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: '7d',
+    });
 
-    return this.login(user);
+    // Store refresh token
+    const tokenHash = await bcrypt.hash(refreshToken, 10);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await db('refresh_tokens').insert({
+      user_id: user.id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      device_info: 'web',
+    });
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: 900, // 15 minutes in seconds
+    };
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+    await db('refresh_tokens')
+      .where('expires_at', '<', new Date())
+      .delete();
   }
 }

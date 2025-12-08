@@ -1,0 +1,248 @@
+---
+name: CI Pipeline
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Build Shared Packages
+  build-packages:
+    name: Build Shared Packages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+  # Auth Service - Test
+  auth-service-test:
+    name: Auth Service - Test
+    runs-on: ubuntu-latest
+    needs: build-packages
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Run tests (auth-service)
+        run: npm run test:auth-service
+
+  # Attendance Service - Test
+  attendance-service-test:
+    name: Attendance Service - Test
+    runs-on: ubuntu-latest
+    needs: build-packages
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Run tests (attendance-service)
+        run: npm run test:attendance-service
+
+  # User Service - Test
+  user-service-test:
+    name: User Service - Test
+    runs-on: ubuntu-latest
+    needs: build-packages
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Run tests (user-service)
+        run: npm run test:user-service
+
+  # Attendance Client - Test
+  attendance-client-test:
+    name: Attendance Client - Test
+    runs-on: ubuntu-latest
+    needs: build-packages
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Run tests (attendance-client)
+        run: npm run test:attendance-client
+
+  # Build Auth Service
+  auth-service-build:
+    name: Auth Service - Build
+    runs-on: ubuntu-latest
+    needs: auth-service-test
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Build auth-service
+        run: npm run build:auth-service
+
+  # Build Attendance Service
+  attendance-service-build:
+    name: Attendance Service - Build
+    runs-on: ubuntu-latest
+    needs: attendance-service-test
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Build attendance-service
+        run: npm run build:attendance-service
+
+  # Build User Service
+  user-service-build:
+    name: User Service - Build
+    runs-on: ubuntu-latest
+    needs: user-service-test
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Build user-service
+        run: npm run build:user-service
+
+  # Build Attendance Client
+  attendance-client-build:
+    name: Attendance Client - Build
+    runs-on: ubuntu-latest
+    needs: attendance-client-test
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build --filter="./packages/*"
+
+      - name: Build attendance-client
+        run: npm run build:attendance-client

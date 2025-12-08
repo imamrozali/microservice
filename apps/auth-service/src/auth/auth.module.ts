@@ -1,24 +1,25 @@
-import { Module } from "@nestjs/common";
-import { AuthService } from "./auth.service";
-import { AuthController } from "./auth.controller";
-import { UsersModule } from "../users/users.module";
-import { JwtStrategy } from "./strategies/jwt.strategy";
-import { LocalStrategy } from "./strategies/local.strategy";
-import { AuditService } from "../audit/audit.service";
-import { RabbitMQService } from "../rabbitmq/rabbitmq.service";
-import { AuditWebSocketGateway } from "../websocket/audit-websocket.gateway";
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { HttpModule } from '@nestjs/axios';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { JwtStrategy } from './jwt.strategy';
+import { WebSocketGatewayService } from '../websocket/websocket.gateway';
+import { RabbitMQModule } from '../rabbitmq/rabbitmq.module';
 
 @Module({
-  imports: [UsersModule],
-  providers: [
-    AuthService,
-    LocalStrategy,
-    JwtStrategy,
-    AuditService,
-    RabbitMQService,
-    AuditWebSocketGateway,
+  imports: [
+    PassportModule,
+    HttpModule,
+    RabbitMQModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '15m' },
+    }),
   ],
   controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, WebSocketGatewayService],
   exports: [AuthService],
 })
 export class AuthModule {}

@@ -1,10 +1,15 @@
 import { authService } from "./authService";
-import { type AxiosResponse } from "axios";
+import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 
 export interface User {
+  photo_url: any;
   id: string;
   email: string;
   role: string;
+  full_name?: string;
+  job_position?: string;
+  phone_number?: string;
+  profile_picture?: string;
   createdAt: string;
   updatedAt: string;
   employee?: {
@@ -23,13 +28,34 @@ export interface UpdatePasswordRequest {
 }
 
 export interface UpdateProfileRequest {
-  phoneNumber?: string;
-  profilePicture?: File;
+  full_name?: string;
+  job_position?: string;
+  phone_number?: string;
 }
 
 class UserService {
-  private get apiClient() {
-    return authService.getApiClient();
+  private apiClient: AxiosInstance;
+
+  constructor() {
+    this.apiClient = axios.create({
+      baseURL: import.meta.env.VITE_USER_SERVICE_URL || "http://localhost:3002",
+      timeout: 10000,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Add auth token to requests
+    this.apiClient.interceptors.request.use(
+      (config) => {
+        const token = authService.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
   }
 
   async getCurrentUser(): Promise<User> {
@@ -37,51 +63,61 @@ class UserService {
     if (!userStr) throw new Error("User not found in session");
     if (!userStr.id) throw new Error("User ID not found in session");
     const response: AxiosResponse<User> = await this.apiClient.get(
-      `/users/${userStr.id}`
+      `/api/users/${userStr.id}`
     );
     return response.data;
   }
 
   async updatePassword(data: UpdatePasswordRequest): Promise<void> {
-    await this.apiClient.put("/users/password", data);
+    await this.apiClient.put("/api/users/password", data);
   }
 
   async updateProfile(data: UpdateProfileRequest): Promise<User> {
-    const formData = new FormData();
-
-    if (data.phoneNumber) {
-      formData.append("phoneNumber", data.phoneNumber);
-    }
-
-    if (data.profilePicture) {
-      formData.append("profilePicture", data.profilePicture);
-    }
-
     const response: AxiosResponse<User> = await this.apiClient.put(
-      "/users/profile",
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      "/api/users/profile",
+      data
     );
 
     return response.data;
   }
 
-  async uploadProfilePicture(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("profilePicture", file);
+  async uploadProfilePicture(file: File): Promise<{ photoUrl: string; fileName: string }> {
+    const userStr = authService.getUsers();
+    if (!userStr?.id) throw new Error("User ID not found in session");
 
-    const response: AxiosResponse<{ profilePicture: string }> =
-      await this.apiClient.post("/users/profile-picture", formData, {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response: AxiosResponse<{ photoUrl: string; fileName: string; message: string }> =
+      await this.apiClient.post(`/api/users/${userStr.id}/upload-photo`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-    return response.data.profilePicture;
+    // Update user profile with new photo_url
+    await this.apiClient.put("/api/users/profile", {
+      photo_url: response.data.photoUrl,
+    });
+
+    // Update session user with new photo_url
+    const updatedUser = { ...userStr, photo_url: response.data.photoUrl };
+    authService.setUser(updatedUser);
+
+    return {
+      photoUrl: response.data.photoUrl,
+      fileName: response.data.fileName,
+    };
+  }
+
+  async getProfilePhoto(): Promise<{ photoUrl: string; fileName: string }> {
+    const userStr = authService.getUsers();
+    if (!userStr?.id) throw new Error("User ID not found in session");
+
+    const response: AxiosResponse<{ photoUrl: string; fileName: string }> =
+      await this.apiClient.get(`/api/users/${userStr.id}/photo`);
+
+    return response.data;
   }
 }
 

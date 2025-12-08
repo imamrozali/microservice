@@ -11,6 +11,7 @@ export interface AuthResponse {
     id: string;
     email: string;
     name?: string;
+    role_id?: number;
   };
 }
 
@@ -59,7 +60,7 @@ class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       const response = await this.apiClient.post<AuthResponse>(
-        "/auth/login",
+        "/api/auth/login",
         credentials
       );
       const data = response.data;
@@ -99,6 +100,14 @@ class AuthService {
 
   setUsers(users: string): void {
     localStorage.setItem(this.USERS_KEY, users);
+    // Dispatch custom event to notify components about profile update
+    window.dispatchEvent(new Event('profileUpdated'));
+  }
+
+  setUser(user: Record<string, any>): void {
+    localStorage.setItem(this.USERS_KEY, JSON.stringify(user));
+    // Dispatch custom event to notify components about profile update
+    window.dispatchEvent(new Event('profileUpdated'));
   }
 
   setToken(token: string): void {

@@ -1,5 +1,5 @@
 import { authService } from "./authService";
-import { type AxiosResponse } from "axios";
+import axios, { type AxiosInstance, type AxiosResponse } from "axios";
 
 export interface AttendanceEvent {
   id: string;
@@ -31,22 +31,53 @@ export interface AttendanceSummary {
 }
 
 class AttendanceService {
-  private get apiClient() {
-    return authService.getApiClient();
+  private apiClient: AxiosInstance;
+
+  constructor() {
+    this.apiClient = axios.create({
+      baseURL: import.meta.env.VITE_ATTENDANCE_SERVICE_URL || "http://localhost:3003",
+      timeout: 10000,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    this.apiClient.interceptors.request.use(
+      (config) => {
+        const token = authService.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
   }
 
   async checkIn(data: CheckInRequest): Promise<AttendanceEvent> {
+    const user = authService.getUsers();
+    if (!user?.id) throw new Error("User not authenticated");
+
     const response: AxiosResponse<AttendanceEvent> = await this.apiClient.post(
-      "/attendance/check-in",
-      data
+      "/api/attendance/check-in",
+      {
+        userId: user.id,
+        ...data,
+      }
     );
     return response.data;
   }
 
   async checkOut(data: CheckOutRequest): Promise<AttendanceEvent> {
+    const user = authService.getUsers();
+    if (!user?.id) throw new Error("User not authenticated");
+
     const response: AxiosResponse<AttendanceEvent> = await this.apiClient.post(
-      "/attendance/check-out",
-      data
+      "/api/attendance/check-out",
+      {
+        userId: user.id,
+        ...data,
+      }
     );
     return response.data;
   }
@@ -55,12 +86,26 @@ class AttendanceService {
     startDate?: string,
     endDate?: string
   ): Promise<AttendanceEvent[]> {
+    const user = authService.getUsers();
+    if (!user?.id) throw new Error("User not authenticated");
+
     const params = new URLSearchParams();
+    params.append("userId", user.id);
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
 
     const response: AxiosResponse<AttendanceEvent[]> = await this.apiClient.get(
-      `/attendance/events?${params}`
+      `/api/attendance/events?${params}`
+    );
+    return response.data;
+  }
+
+  async getTodayAttendance(): Promise<any> {
+    const user = authService.getUsers();
+    if (!user?.id) throw new Error("User not authenticated");
+
+    const response: AxiosResponse<any> = await this.apiClient.get(
+      `/api/attendance/today/${user.id}`
     );
     return response.data;
   }
@@ -69,12 +114,16 @@ class AttendanceService {
     startDate?: string,
     endDate?: string
   ): Promise<AttendanceSummary[]> {
+    const user = authService.getUsers();
+    if (!user?.id) throw new Error("User not authenticated");
+
     const params = new URLSearchParams();
+    params.append("employee_id", user.id);
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
 
     const response: AxiosResponse<AttendanceSummary[]> =
-      await this.apiClient.get(`/attendance/summary?${params}`);
+      await this.apiClient.get(`/api/attendance/summary?${params}`);
     return response.data;
   }
 }

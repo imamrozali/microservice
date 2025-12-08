@@ -34,20 +34,20 @@ class EmployeeService {
 
   async getEmployees(): Promise<Employee[]> {
     const response: AxiosResponse<Employee[]> =
-      await this.apiClient.get("/employees");
+      await this.apiClient.get("/api/employees");
     return response.data;
   }
 
   async getEmployee(id: string): Promise<Employee> {
     const response: AxiosResponse<Employee> = await this.apiClient.get(
-      `/employees/${id}`
+      `/api/employees/${id}`
     );
     return response.data;
   }
 
   async createEmployee(data: CreateEmployeeRequest): Promise<Employee> {
     const response: AxiosResponse<Employee> = await this.apiClient.post(
-      "/employees",
+      "/api/employees",
       data
     );
     return response.data;
@@ -58,14 +58,14 @@ class EmployeeService {
     data: UpdateEmployeeRequest
   ): Promise<Employee> {
     const response: AxiosResponse<Employee> = await this.apiClient.put(
-      `/employees/${id}`,
+      `/api/employees/${id}`,
       data
     );
     return response.data;
   }
 
   async deleteEmployee(id: string): Promise<void> {
-    await this.apiClient.delete(`/employees/${id}`);
+    await this.apiClient.delete(`/api/employees/${id}`);
   }
 }
 
