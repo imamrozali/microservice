@@ -81,14 +81,14 @@ class UserService {
     return response.data;
   }
 
-  async uploadProfilePicture(file: File): Promise<{ photoUrl: string; fileName: string }> {
+  async uploadProfilePicture(file: File): Promise<{ photo_url: string; fileName: string }> {
     const userStr = authService.getUsers();
     if (!userStr?.id) throw new Error("User ID not found in session");
 
     const formData = new FormData();
     formData.append("file", file);
 
-    const response: AxiosResponse<{ photoUrl: string; fileName: string; message: string }> =
+    const response: AxiosResponse<{ photo_url: string; fileName: string; message: string }> =
       await this.apiClient.post(`/api/users/${userStr.id}/upload-photo`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -97,24 +97,24 @@ class UserService {
 
     // Update user profile with new photo_url
     await this.apiClient.put("/api/users/profile", {
-      photo_url: response.data.photoUrl,
+      photo_url: response.data.photo_url,
     });
 
     // Update session user with new photo_url
-    const updatedUser = { ...userStr, photo_url: response.data.photoUrl };
+    const updatedUser = { ...userStr, photo_url: response.data.photo_url };
     authService.setUser(updatedUser);
 
     return {
-      photoUrl: response.data.photoUrl,
+      photo_url: response.data.photo_url,
       fileName: response.data.fileName,
     };
   }
 
-  async getProfilePhoto(): Promise<{ photoUrl: string; fileName: string }> {
+  async getProfilePhoto(): Promise<{ photo_url: string; fileName: string }> {
     const userStr = authService.getUsers();
     if (!userStr?.id) throw new Error("User ID not found in session");
 
-    const response: AxiosResponse<{ photoUrl: string; fileName: string }> =
+    const response: AxiosResponse<{ photo_url: string; fileName: string }> =
       await this.apiClient.get(`/api/users/${userStr.id}/photo`);
 
     return response.data;

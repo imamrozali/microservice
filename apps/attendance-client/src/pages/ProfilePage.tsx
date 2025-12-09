@@ -34,7 +34,7 @@ export const ProfilePage = () => {
       if (userData.profile_picture) {
         try {
           const photoData = await userService.getProfilePhoto();
-          setPreviewUrl(photoData.photoUrl);
+          setPreviewUrl(photoData.photo_url);
         } catch (error) {
           console.error('Failed to load profile photo:', error);
         }
@@ -65,7 +65,7 @@ export const ProfilePage = () => {
       // Upload profile picture if changed
       if (profilePicture) {
         const result = await userService.uploadProfilePicture(profilePicture);
-        setPreviewUrl(result.photoUrl);
+        setPreviewUrl(result.photo_url);
       }
       
       // Update profile data

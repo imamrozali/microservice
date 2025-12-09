@@ -8,9 +8,8 @@ export interface User {
   full_name: string;
   job_position: string;
   phone_number?: string;
-  photo_url?: string;
   profile_picture?: string;
-  photoUrl?: string; // Presigned URL from MinIO
+  photo_url?: string; // Presigned URL from MinIO
   role_id: string;
   is_active: boolean;
   created_at: string;
@@ -85,11 +84,11 @@ class UserService {
     await this.apiClient.delete(`/api/users/${id}`);
   }
 
-  async uploadProfilePicture(userId: string, file: File): Promise<{ photoUrl: string; fileName: string }> {
+  async uploadProfilePicture(userId: string, file: File): Promise<{ photo_url: string; fileName: string }> {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await this.apiClient.post<{ photoUrl: string; fileName: string; message: string }>(
+    const response = await this.apiClient.post<{ photo_url: string; fileName: string; message: string }>(
       `/api/users/${userId}/upload-photo`,
       formData,
       {
@@ -100,13 +99,13 @@ class UserService {
     );
 
     return {
-      photoUrl: response.data.photoUrl,
+      photo_url: response.data.photo_url,
       fileName: response.data.fileName,
     };
   }
 
-  async getProfilePhoto(userId: string): Promise<{ photoUrl: string; fileName: string }> {
-    const response = await this.apiClient.get<{ photoUrl: string; fileName: string }>(
+  async getProfilePhoto(userId: string): Promise<{ photo_url: string; fileName: string }> {
+    const response = await this.apiClient.get<{ photo_url: string; fileName: string }>(
       `/api/users/${userId}/photo`
     );
 

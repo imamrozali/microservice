@@ -126,7 +126,7 @@ export const EmployeesPage = () => {
                       <div className="shrink-0 h-10 w-10">
                         <img
                           className="h-10 w-10 rounded-full object-cover"
-                          src={employee.photoUrl || employee.photo_url || `https://ui-avatars.com/api/?name=${employee.full_name}&background=random`}
+                          src={employee.photo_url || employee.photo_url || `https://ui-avatars.com/api/?name=${employee.full_name}&background=random`}
                           alt={employee.full_name}
                         />
                       </div>

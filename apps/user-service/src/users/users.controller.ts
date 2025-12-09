@@ -31,13 +31,13 @@ export class UsersController {
   async findAll() {
     const users = await this.usersService.findAll();
     
-    // Add photoUrl for each user that has profile_picture
+    // Add photo_url for each user that has profile_picture
     const usersWithPhotos = await Promise.all(
       users.map(async (user) => {
         if (user.profile_picture) {
           try {
-            const photoUrl = await this.minioService.getFileUrl(user.profile_picture);
-            return { ...user, photoUrl };
+            const photo_url = await this.minioService.getFileUrl(user.profile_picture);
+            return { ...user, photo_url };
           } catch (error) {
             console.error(`Failed to get photo URL for user ${user.id}:`, error);
             return user;
@@ -60,11 +60,11 @@ export class UsersController {
   async findById(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
     
-    // Add photoUrl if user has profile_picture
+    // Add photo_url if user has profile_picture
     if (user?.profile_picture) {
       try {
-        const photoUrl = await this.minioService.getFileUrl(user.profile_picture);
-        return { ...user, photoUrl };
+        const photo_url = await this.minioService.getFileUrl(user.profile_picture);
+        return { ...user, photo_url };
       } catch (error) {
         console.error(`Failed to get photo URL for user ${id}:`, error);
       }
@@ -163,12 +163,12 @@ export class UsersController {
     await this.usersService.updatePhotoOnly(id, fileName);
 
     // Get presigned URL for immediate access
-    const photoUrl = await this.minioService.getFileUrl(fileName);
+    const photo_url = await this.minioService.getFileUrl(fileName);
 
     return {
       message: 'Photo uploaded successfully',
       fileName,
-      photoUrl,
+      photo_url,
     };
   }
 
@@ -180,10 +180,10 @@ export class UsersController {
       throw new BadRequestException('User has no profile picture');
     }
 
-    const photoUrl = await this.minioService.getFileUrl(user.profile_picture);
+    const photo_url = await this.minioService.getFileUrl(user.profile_picture);
     
     return {
-      photoUrl,
+      photo_url,
       fileName: user.profile_picture,
     };
   }

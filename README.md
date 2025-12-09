@@ -269,7 +269,7 @@ The system uses MinIO for profile picture storage with a secure presigned URL ap
    ```
    GET /api/users → User Service fetches users
    → For each user with profile_picture → Generate presigned URL from MinIO
-   → Return users with photoUrl field
+   → Return users with photo_url field
    ```
 
 3. **Security**:

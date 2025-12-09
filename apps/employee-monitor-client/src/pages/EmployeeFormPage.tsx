@@ -57,14 +57,14 @@ export const EmployeeFormPage = () => {
         is_active: employee.is_active,
       } as UpdateUserDto);
 
-      // Load profile picture if exists - photoUrl is already included in getUserById response
-      if (employee.photoUrl) {
-        setPreviewUrl(employee.photoUrl);
+      // Load profile picture if exists - photo_url is already included in getUserById response
+      if (employee.photo_url) {
+        setPreviewUrl(employee.photo_url);
       } else if (employee.profile_picture) {
         // Fallback: fetch photo URL separately if not included in response
         try {
           const photoData = await userService.getProfilePhoto(id);
-          setPreviewUrl(photoData.photoUrl);
+          setPreviewUrl(photoData.photo_url);
         } catch (error) {
           console.error('Failed to load profile photo:', error);
         }
@@ -107,8 +107,8 @@ export const EmployeeFormPage = () => {
       // Upload profile picture if changed
       if (profilePicture && userId) {
         const photoData = await userService.uploadProfilePicture(userId, profilePicture);
-        // Update preview with the actual photoUrl from server
-        setPreviewUrl(photoData.photoUrl);
+        // Update preview with the actual photo_url from server
+        setPreviewUrl(photoData.photo_url);
       }
 
       navigate({ to: '/employees' });
