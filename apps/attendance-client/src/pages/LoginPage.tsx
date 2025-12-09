@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form'
 import { useRouter } from '@tanstack/react-router'
 import { authService, type LoginCredentials } from '../services'
 import { LogIn, Eye, EyeOff, AlertCircle, Clock } from 'lucide-react'
-import { Card } from "@repo/ui/card";
 
 export function LoginPage() {
     const [isLoading, setIsLoading] = useState(false)
@@ -42,7 +41,6 @@ export function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 py-12 px-4 sm:px-6 lg:px-8">
             <div className="absolute inset-0 bg-black opacity-20"></div>
-            <Card title={'hello'}  href={''} > hello</Card>
             <div className="max-w-md w-full space-y-8 relative z-10">
                 {/* Logo and Title */}
                 <div className="text-center">
